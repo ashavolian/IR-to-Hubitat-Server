@@ -1,0 +1,62 @@
+{
+  "KEY_2": {
+    "remote": "remote2",
+    "device": "97",
+    "command": "setPosition",
+    "var": "30"
+  },
+  "KEY_3": {
+    "remote": "remote2",
+    "device": "97",
+    "command": "setPosition",
+    "var": "40"
+  },
+  "KEY_4": {
+    "remote": "remote2",
+    "device": "97",
+    "command": "setPosition",
+    "var": "50"
+  },
+  "KEY_5": {
+    "remote": "remote2",
+    "device": "97",
+    "command": "setPosition",
+    "var": "60"
+  },
+  "KEY_6": {
+    "remote": "remote1",
+    "device": "77",
+    "command": "setLevel",
+    "var": "70/"
+  },
+  "KEY_9": {
+    "remote": "remote1",
+    "device": "77",
+    "command": "setLevel",
+    "var": "100/"
+  },
+  "KEY_8": {
+    "remote": "remote1",
+    "device": "77",
+    "command": "setLevel",
+    "var": "90/"
+  },
+  "KEY_YELLOW": {
+    "remote": "remote1",
+    "device": "96",
+    "command": "push",
+    "var": "1"
+  },
+  "KEY_0": {
+    "remote": "remote1",
+    "device": "77",
+    "command": "setLevel",
+    "var": "0/"
+  },
+  "KEY_1": {
+    "remote": "remote1",
+    "device": "77",
+    "command": "setLevel",
+    "var": "20/"
+  }
+}

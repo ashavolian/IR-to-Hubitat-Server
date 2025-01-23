@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>IR to Hubitat Mapper</title>
+    <style>
+        body { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .form-group { margin-bottom: 15px; }
+        .mapping { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+        select {
+            margin: 5px 0;
+            padding: 5px;
+            width: 100%;
+            max-width: 300px;
+        }
+        .parameter {
+            margin: 5px 0;
+            padding: 5px;
+            width: 100%;
+            max-width: 300px;
+        }
+        .delete-btn {
+            background-color: #ff4444;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-top: 5px;
+        }
+        .delete-btn:hover {
+            background-color: #cc0000;
+        }
+        .remote-selection {
+            margin-bottom: 15px;
+        }
+        .teach-btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin-left: 10px;
+        }
+        .teach-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .teach-btn.teaching {
+            background-color: #ff9800;
+        }
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .filter-section {
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>IR to Hubitat Mapper</h1>
+    
+    <div class="form-group">
+        <h2>Add New Mapping</h2>
+        
+        <div class="remote-selection">
+            <select id="remoteSelect">
+                <option value="">Select remote...</option>
+                {% for remote in remotes %}
+                <option value="{{ remote }}">{{ remote }}</option>
+                {% endfor %}
+            </select>
+
+            <select id="irKey">
+                {% for key in ir_keys %}
+                <option value="{{ key }}">{{ key }}</option>
+                {% endfor %}
+            </select>
+            
+            <button onclick="teachIR()" class="teach-btn" id="teachButton" disabled>
+                Teach IR Command
+            </button>
+        </div>
+        
+        <select id="deviceSelect">
+            <option value="">Select device...</option>
+            {% for device in devices %}
+            <option value="{{ device.id }}" data-name="{{ device.label }}">
+                {{ device.label }} ({{ device.type }})
+            </option>
+            {% endfor %}
+        </select>
+        
+        <select id="command">
+            <option value="">Select command...</option>
+        </select>
+        
+        <div id="parameterFields"></div>
+        
+        <button onclick="addMapping()">Add Mapping</button>
+    </div>
+
+    <div class="filter-section">
+        <h2>Current Mappings</h2>
+        <select id="remoteFilter" onchange="filterMappings()">
+            <option value="">All Remotes</option>
+            {% for remote in remotes %}
+            <option value="{{ remote }}">{{ remote }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <div id="mappings">
+        {% for remote in remotes %}
+        <div class="remote-group" data-remote="{{ remote }}">
+            <h3>{{ remote }}</h3>
+            {% for ir_key, mapping in mappings.items() %}
+                {% if mapping.remote == remote %}
+                <div class="mapping">
+                    <strong>IR Key:</strong> {{ ir_key }}<br>
+                    <strong>Device:</strong> 
+                    {% for device in devices %}
+                        {% if device.id == mapping.device %}
+                            {{ device.label }}
+                        {% endif %}
+                    {% endfor %}
+                    (ID: {{ mapping.device }})<br>
+                    <strong>Command:</strong> {{ mapping.command }}<br>
+                    {% if mapping.var and mapping.var != 'n/a' %}
+                    <strong>Parameters:</strong> 
+                    {% for param in mapping.var.split('/') %}
+                        {{ param }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}<br>
+                    {% endif %}
+                    <button onclick="removeMapping('{{ ir_key }}')" class="delete-btn">Delete</button>
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endfor %}
+    </div>
+
+    <script>
+        document.getElementById('deviceSelect').addEventListener('change', function() {
+            const deviceId = this.value;
+            if (deviceId) {
+                fetch(`/get_device_commands/${deviceId}`)
+                    .then(response => response.json())
+                    .then(commands => {
+                        const commandSelect = document.getElementById('command');
+                        commandSelect.innerHTML = '<option value="">Select command...</option>';
+                        commands.forEach(cmd => {
+                            commandSelect.innerHTML += `<option value="${cmd.command}" data-types='${JSON.stringify(cmd.type)}'>${cmd.command}</option>`;
+                        });
+                    });
+            }
+        });
+
+        document.getElementById('command').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const parameterFields = document.getElementById('parameterFields');
+            parameterFields.innerHTML = '';
+
+            if (selectedOption.value) {
+                const types = JSON.parse(selectedOption.dataset.types || '[]');
+                if (types[0] != 'n/a') {
+                    types.forEach((type, index) => {
+                        const field = document.createElement('input');
+                        field.type = type === 'NUMBER' ? 'number' : 'text';
+                        field.className = 'parameter';
+                        field.placeholder = `Parameter ${index + 1} (${type})`;
+                        field.required = true;
+                        parameterFields.appendChild(field);
+                    });
+                }
+            }
+        });
+
+        function addMapping() {
+            const mapping = {
+                remote: document.getElementById('remoteSelect').value,
+                ir_key: document.getElementById('irKey').value,
+                device_id: document.getElementById('deviceSelect').value,
+                command: document.getElementById('command').value,
+                parameters: Array.from(document.getElementsByClassName('parameter'))
+                    .map(input => input.value)
+            };
+
+            fetch('/add_mapping', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(mapping)
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    window.location.href = window.location.pathname;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Failed to add mapping. Please try again.');
+            });
+        }
+
+        function removeMapping(irKey) {
+            if (confirm('Are you sure you want to delete this mapping?')) {
+                fetch(`/remove_mapping/${irKey}`, {
+                    method: 'POST'
+                })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.status === 'success') {
+                        window.location.href = window.location.pathname;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Failed to remove mapping. Please try again.');
+                });
+            }
+        }
+
+        document.getElementById('remoteSelect').addEventListener('change', updateTeachButton);
+        document.getElementById('irKey').addEventListener('change', updateTeachButton);
+        
+        function updateTeachButton() {
+            const remote = document.getElementById('remoteSelect').value;
+            const key = document.getElementById('irKey').value;
+            document.getElementById('teachButton').disabled = !remote || !key;
+        }
+        
+        function teachIR() {
+            const remote = document.getElementById('remoteSelect').value;
+            const key = document.getElementById('irKey').value;
+            const button = document.getElementById('teachButton');
+            
+            button.disabled = true;
+            button.classList.add('teaching');
+            button.innerHTML = '<span class="spinner"></span> Teaching...';
+            
+            fetch(`/teach_ir/${remote}/${key}`, {
+                method: 'POST'
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                button.disabled = false;
+                button.classList.remove('teaching');
+                button.innerHTML = 'Teach IR Command';
+                if (data.status === 'error') {
+                    alert('Failed to send IR signal');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                button.disabled = false;
+                button.classList.remove('teaching');
+                button.innerHTML = 'Teach IR Command';
+                alert('Error teaching IR command');
+            });
+        }
+
+        function filterMappings() {
+            const selectedRemote = document.getElementById('remoteFilter').value;
+            const remoteGroups = document.getElementsByClassName('remote-group');
+            
+            for (let group of remoteGroups) {
+                if (!selectedRemote || group.dataset.remote === selectedRemote) {
+                    group.style.display = 'block';
+                } else {
+                    group.style.display = 'none';
+                }
+            }
+        }
+    </script>
+</body>
+</html> 
