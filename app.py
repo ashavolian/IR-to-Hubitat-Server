@@ -88,17 +88,13 @@ def send_continuous_ir(remote, key, duration=5):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if request.method == 'POST':
-        # Store form data in session
         session['form_data'] = {
             'remote': request.form.get('remote'),
             'ir_key': request.form.get('ir_key'),
             'device': request.form.get('device'),
             'command': request.form.get('command')
         }
-        # Process the form submission
-        # Your existing form processing logic here
     
-    # Get form data from session (or empty dict if not exists)
     form_data = session.get('form_data', {})
     
     mappings = load_mappings()
@@ -125,24 +121,37 @@ def get_device_commands(device_id):
 def add_mapping():
     mapping = request.json
     mappings = load_mappings()
-    mappings[mapping['ir_key']] = {
-        'remote': mapping['remote'],
+    
+    # Initialize remote if it doesn't exist
+    if mapping['remote'] not in mappings:
+        mappings[mapping['remote']] = {}
+    
+    # Add the mapping under the remote
+    mappings[mapping['remote']][mapping['ir_key']] = {
         'device': mapping['device_id'],
         'command': mapping['command'],
         'var': '/'.join(mapping['parameters']) if mapping['parameters'] else None
     }
+    
     save_mappings(mappings)
     restart_control_script()
     return jsonify({"status": "success"})
 
-@app.route('/remove_mapping/<ir_key>', methods=['POST'])
-def remove_mapping(ir_key):
+@app.route('/remove_mapping', methods=['POST'])
+def remove_mapping():
+    data = request.json
+    remote = data.get('remote')
+    ir_key = data.get('ir_key')
+    
     try:
         mappings = load_mappings()
-        if ir_key in mappings:
-            del mappings[ir_key]
+        if remote in mappings and ir_key in mappings[remote]:
+            del mappings[remote][ir_key]
+            # Remove remote if empty
+            if not mappings[remote]:
+                del mappings[remote]
             save_mappings(mappings)
-            restart_control_script()  # This now runs asynchronously
+            restart_control_script()
             return jsonify({"status": "success"})
         return jsonify({"status": "error", "message": "Mapping not found"})
     except Exception as e:

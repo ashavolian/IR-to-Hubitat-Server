@@ -76,8 +76,8 @@
         <div class="remote-selection">
             <select id="remoteSelect">
                 <option value="">Select remote...</option>
-                {% for remote in remotes %}
-                <option value="{{ remote }}">{{ remote }}</option>
+                {% for remote_id, remote_data in remotes.items() %}
+                <option value="{{ remote_id }}">{{ remote_data.name }}</option>
                 {% endfor %}
             </select>
 
@@ -114,18 +114,18 @@
         <h2>Current Mappings</h2>
         <select id="remoteFilter" onchange="filterMappings()">
             <option value="">All Remotes</option>
-            {% for remote in remotes %}
-            <option value="{{ remote }}">{{ remote }}</option>
+            {% for remote_id, remote_data in remotes.items() %}
+            <option value="{{ remote_id }}">{{ remote_data.name }}</option>
             {% endfor %}
         </select>
     </div>
 
     <div id="mappings">
-        {% for remote in remotes %}
-        <div class="remote-group" data-remote="{{ remote }}">
-            <h3>{{ remote }}</h3>
+        {% for remote_id, remote_data in remotes.items() %}
+        <div class="remote-group" data-remote="{{ remote_id }}">
+            <h3>{{ remote_data.name }}</h3>
             {% for ir_key, mapping in mappings.items() %}
-                {% if mapping.remote == remote %}
+                {% if mapping.remote == remote_id %}
                 <div class="mapping">
                     <strong>IR Key:</strong> {{ ir_key }}<br>
                     <strong>Device:</strong> 
@@ -298,6 +298,23 @@
                     group.style.display = 'none';
                 }
             }
+        }
+
+        function sendIR(remote, key) {
+            fetch('/send_ir', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: `remote=${encodeURIComponent(remote)}&key=${encodeURIComponent(key)}`
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'error') {
+                    console.error('Error:', data.message);
+                }
+            })
+            .catch(error => console.error('Error:', error));
         }
     </script>
 </body>

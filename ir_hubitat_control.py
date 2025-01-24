@@ -29,6 +29,12 @@ def send_request(device, command, var):
     else:
         print("Skipping request to prevent flooding")
 
+def execute_hubitat_command(mapping):
+    device_id = mapping["device"]
+    command = mapping["command"]
+    var = "/" + mapping["var"] if mapping["var"] else ""
+    send_request(device_id, command, var)
+
 # Listen for IR signals using irw command
 def listen_for_ir_signals():
     print("Listening for IR signals...")
@@ -38,27 +44,29 @@ def listen_for_ir_signals():
     try:
         for line in process.stdout:
             parts = line.strip().split()
-            if len(parts) >= 3:
+            if len(parts) >= 4:  # Format: <code> <repeat> <key> <remote>
+                remote = parts[3]
                 ir_key = parts[2]
-                if ir_key in mappings:
-                    print(f"IR Key Detected: {ir_key}")
-                    device_info = mappings[ir_key]
-                    device_id = device_info["device"]
-                    command = device_info["command"]
-                    var = "/" + device_info["var"] if device_info["var"] else ""
-
-                    send_request(device_id, command, var)
+                
+                # Check if remote exists in mappings
+                if remote in mappings:
+                    # Check if key exists for this remote
+                    if ir_key in mappings[remote]:
+                        print(f"IR Key Detected: {ir_key} from remote: {remote}")
+                        mapping = mappings[remote][ir_key]
+                        execute_hubitat_command(mapping)
+                    else:
+                        print(f"Unknown IR key: {ir_key} for remote: {remote}")
                 else:
-                    print(f"Unknown IR key: {ir_key}")
+                    print(f"Unknown remote: {remote}")
     except KeyboardInterrupt:
         print("Stopping IR listener...")
         process.terminate()
 
-def process_ir_code(code):
+def process_ir_code(code, remote):
     mappings = load_mappings()
-    for ir_key, mapping in mappings.items():
-        if code == ir_key and current_remote == mapping['remote']:
-            execute_hubitat_command(mapping)
+    if remote in mappings and code in mappings[remote]:
+        execute_hubitat_command(mappings[remote][code])
 
 if __name__ == "__main__":
     listen_for_ir_signals()
