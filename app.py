@@ -6,8 +6,13 @@ import subprocess
 import time
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+import logging
 
 app = Flask(__name__)
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 # Configuration
 HUBITAT_IP = "192.168.1.220"
@@ -87,25 +92,32 @@ def send_continuous_ir(remote, key, duration=5):
 # Routes
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    if request.method == 'POST':
-        session['form_data'] = {
-            'remote': request.form.get('remote'),
-            'ir_key': request.form.get('ir_key'),
-            'device': request.form.get('device'),
-            'command': request.form.get('command')
-        }
-    
-    form_data = session.get('form_data', {})
-    
-    mappings = load_mappings()
-    devices = get_devices()
-    remotes = get_available_remotes()
-    return render_template('index.html', 
-                         remotes=remotes,
-                         devices=devices,
-                         ir_keys=IR_KEYS,
-                         mappings=mappings,
-                         form_data=form_data)
+    try:
+        if request.method == 'POST':
+            session['form_data'] = {
+                'remote': request.form.get('remote'),
+                'ir_key': request.form.get('ir_key'),
+                'device': request.form.get('device'),
+                'command': request.form.get('command')
+            }
+        
+        form_data = session.get('form_data', {})
+        mappings = load_mappings()
+        devices = get_devices()
+        remotes = get_available_remotes()
+        
+        logger.debug(f"Mappings: {mappings}")
+        logger.debug(f"Remotes: {remotes}")
+        
+        return render_template('index.html', 
+                             remotes=remotes,
+                             devices=devices,
+                             ir_keys=IR_KEYS,
+                             mappings=mappings,
+                             form_data=form_data)
+    except Exception as e:
+        logger.error(f"Error in index route: {str(e)}", exc_info=True)
+        return f"An error occurred: {str(e)}", 500
 
 @app.route('/get_device_commands/<device_id>')
 def get_device_commands(device_id):
@@ -119,31 +131,42 @@ def get_device_commands(device_id):
 
 @app.route('/add_mapping', methods=['POST'])
 def add_mapping():
-    mapping = request.json
-    mappings = load_mappings()
-    
-    # Initialize remote if it doesn't exist
-    if mapping['remote'] not in mappings:
-        mappings[mapping['remote']] = {}
-    
-    # Add the mapping under the remote
-    mappings[mapping['remote']][mapping['ir_key']] = {
-        'device': mapping['device_id'],
-        'command': mapping['command'],
-        'var': '/'.join(mapping['parameters']) if mapping['parameters'] else None
-    }
-    
-    save_mappings(mappings)
-    restart_control_script()
-    return jsonify({"status": "success"})
+    try:
+        mapping = request.json
+        logger.debug(f"Received mapping: {mapping}")
+        
+        mappings = load_mappings()
+        
+        # Initialize remote if it doesn't exist
+        if mapping['remote'] not in mappings:
+            mappings[mapping['remote']] = {}
+        
+        # Add the mapping under the remote
+        mappings[mapping['remote']][mapping['ir_key']] = {
+            'device': mapping['device_id'],
+            'command': mapping['command'],
+            'var': '/'.join(mapping['parameters']) if mapping['parameters'] else None
+        }
+        
+        save_mappings(mappings)
+        restart_control_script()
+        return jsonify({"status": "success"})
+    except Exception as e:
+        logger.error(f"Error in add_mapping: {str(e)}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/remove_mapping', methods=['POST'])
 def remove_mapping():
-    data = request.json
-    remote = data.get('remote')
-    ir_key = data.get('ir_key')
-    
     try:
+        data = request.json
+        logger.debug(f"Remove mapping request: {data}")
+        
+        remote = data.get('remote')
+        ir_key = data.get('ir_key')
+        
+        if not remote or not ir_key:
+            raise ValueError("Missing remote or ir_key in request")
+        
         mappings = load_mappings()
         if remote in mappings and ir_key in mappings[remote]:
             del mappings[remote][ir_key]
@@ -155,7 +178,8 @@ def remove_mapping():
             return jsonify({"status": "success"})
         return jsonify({"status": "error", "message": "Mapping not found"})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)})
+        logger.error(f"Error in remove_mapping: {str(e)}", exc_info=True)
+        return jsonify({"status": "error", "message": str(e)}), 500
 
 @app.route('/teach_ir/<remote>/<key>', methods=['POST'])
 def teach_ir(remote, key):
@@ -163,4 +187,5 @@ def teach_ir(remote, key):
     return jsonify({"status": "success" if success else "error"})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.secret_key = 'your_secret_key_here'
+    app.run(host='0.0.0.0', port=5000, debug=True)
