@@ -76,8 +76,8 @@
         <div class="remote-selection">
             <select id="remoteSelect">
                 <option value="">Select remote...</option>
-                {% for remote_id, remote_data in remotes.items() %}
-                <option value="{{ remote_id }}">{{ remote_data.name }}</option>
+                {% for remote in remotes %}
+                <option value="{{ remote }}">{{ remote }}</option>
                 {% endfor %}
             </select>
 
@@ -114,37 +114,32 @@
         <h2>Current Mappings</h2>
         <select id="remoteFilter" onchange="filterMappings()">
             <option value="">All Remotes</option>
-            {% for remote_id, remote_data in remotes.items() %}
-            <option value="{{ remote_id }}">{{ remote_data.name }}</option>
+            {% for remote in remotes %}
+            <option value="{{ remote }}">{{ remote }}</option>
             {% endfor %}
         </select>
     </div>
 
     <div id="mappings">
-        {% for remote_id, remote_data in remotes.items() %}
-        <div class="remote-group" data-remote="{{ remote_id }}">
-            <h3>{{ remote_data.name }}</h3>
-            {% for ir_key, mapping in mappings.items() %}
-                {% if mapping.remote == remote_id %}
-                <div class="mapping">
-                    <strong>IR Key:</strong> {{ ir_key }}<br>
-                    <strong>Device:</strong> 
-                    {% for device in devices %}
-                        {% if device.id == mapping.device %}
-                            {{ device.label }}
-                        {% endif %}
-                    {% endfor %}
-                    (ID: {{ mapping.device }})<br>
-                    <strong>Command:</strong> {{ mapping.command }}<br>
-                    {% if mapping.var and mapping.var != 'n/a' %}
-                    <strong>Parameters:</strong> 
-                    {% for param in mapping.var.split('/') %}
-                        {{ param }}{% if not loop.last %}, {% endif %}
-                    {% endfor %}<br>
+        {% for remote, remote_mappings in mappings.items() %}
+        <div class="remote-group" data-remote="{{ remote }}">
+            <h3>Remote: {{ remote }}</h3>
+            {% for ir_key, mapping in remote_mappings.items() %}
+            <div class="mapping">
+                <strong>IR Key:</strong> {{ ir_key }}<br>
+                <strong>Device:</strong> 
+                {% for device in devices %}
+                    {% if device.id == mapping.device %}
+                        {{ device.label }}
                     {% endif %}
-                    <button onclick="removeMapping('{{ ir_key }}')" class="delete-btn">Delete</button>
-                </div>
+                {% endfor %}
+                (ID: {{ mapping.device }})<br>
+                <strong>Command:</strong> {{ mapping.command }}<br>
+                {% if mapping.var and mapping.var != 'n/a' %}
+                <strong>Parameters:</strong> {{ mapping.var }}<br>
                 {% endif %}
+                <button onclick="removeMapping('{{ remote }}', '{{ ir_key }}')" class="delete-btn">Delete</button>
+            </div>
             {% endfor %}
         </div>
         {% endfor %}
@@ -220,9 +215,9 @@
             });
         }
 
-        function removeMapping(irKey) {
+        function removeMapping(remote, irKey) {
             if (confirm('Are you sure you want to delete this mapping?')) {
-                fetch(`/remove_mapping/${irKey}`, {
+                fetch(`/remove_mapping/${remote}/${irKey}`, {
                     method: 'POST'
                 })
                 .then(response => {

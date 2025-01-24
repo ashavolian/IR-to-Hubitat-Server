@@ -73,6 +73,7 @@ def get_available_remotes():
     try:
         result = subprocess.run(['irsend', '-d', LIRC_DEVICE, 'LIST', '', ''],
                               capture_output=True, text=True)
+        # Return just the list of remote names
         remotes = result.stdout.strip().split('\n')
         return [r.strip() for r in remotes if r.strip()]
     except:
