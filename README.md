@@ -66,8 +66,7 @@ sudo apt-get install lirc
 ```bash
 irw
 ```
-
-[Insert picture of irw output]
+<img width="280" alt="Screenshot 2025-01-27 at 7 22 16 PM" src="https://github.com/user-attachments/assets/8eb2d0ed-26e7-4390-8656-1d69302083fa" />
 
 ## 🛠️ Hardware Setup
 
@@ -85,7 +84,6 @@ Connect your IR receiver to the Raspberry Pi:
 2. GND (Ground) → Pin 6 (Ground)
 3. OUT (Signal) → Pin 18 (GPIO18)
 
-![IR Receiver Wiring Diagram]
 [Insert wiring diagram image here]
 
 ## ⚙️ Raspberry Pi Configuration
@@ -428,7 +426,7 @@ http://[your-server-ip]:5000
 ```
 
 ### 🎓 Teaching IR Commands
-[Insert picture of teaching process]
+<img width="500" src="https://github.com/user-attachments/assets/ad2c6c6f-89ea-41e1-b3e3-06827bac0645" />
 
 1. Select your remote
 2. Choose the IR key
@@ -436,7 +434,8 @@ http://[your-server-ip]:5000
 4. Press the button on your remote
 
 ### 🔗 Mapping Commands
-[Insert picture of mapping process]
+
+<img width="400" src="https://github.com/user-attachments/assets/4283ccd9-c4f9-4b41-a1b3-16d4add9a4ea" />
 
 1. Select the target Hubitat device
 2. Choose the command
@@ -492,8 +491,6 @@ sudo systemctl restart lircd
 ```bash
 sudo chmod 666 /dev/lirc0
 ```
-
-[Insert picture of successful LIRC setup]
 
 ## 🤝 Contributing
 
