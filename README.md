@@ -356,15 +356,11 @@ end remote
 - Jumper wires
 
 ### IR Blaster Wiring
-Connect your IR blaster circuit to the Raspberry Pi:
-1. GPIO17 → 220Ω resistor → Transistor base
-2. Transistor emitter → Ground (Pin 6)
-3. Transistor collector → 47Ω resistor → IR LED anode
-4. IR LED cathode → Ground
-5. 3.3V (Pin 1) → IR LED anode (via 47Ω resistor)
+Connect the IR blaster circuit to the Raspberry Pi:
+1. ground → gnd
+2. 3.3V (Pin 1) → vcc
+3. GPIO17 → dat
 
-![IR Blaster Wiring Diagram]
-[Insert blaster wiring diagram here]
 
 ### Update Pi Configuration
 Add these lines to `/boot/config.txt`:
@@ -406,24 +402,6 @@ ir-ctl -d /dev/lirc0 --send=pulse.txt
 # For debugging
 ir-ctl -d /dev/lirc0 --features
 ```
-
-### IR Blaster Troubleshooting
-1. Weak signal:
-   - Check LED orientation
-   - Verify transistor connections
-   - Try increasing the 47Ω resistor to 100Ω
-   - Use multiple IR LEDs in parallel for wider coverage
-
-2. No transmission:
-   - Verify GPIO17 is not in use
-   - Check transistor pinout (EBC orientation)
-   - Test LED with multimeter
-   - Ensure LIRC service is running
-
-3. Interference:
-   - Keep IR LED away from receiver
-   - Shield the receiver from direct LED light
-   - Add capacitor between power and ground
 
 ### Multiple IR LED Setup
 For better coverage, you can connect multiple IR LEDs in parallel:
@@ -524,20 +502,6 @@ Contributions are welcome! Let's make this project awesome together! Please feel
 ## 📜 License
 
 This project is licensed under the GNU General Public License v3.0 (GPL-3.0).
-
-### What this means:
-
-✅ **Allowed**:
-- Use the code for personal projects
-- Modify the code
-- Share the code with others
-- Study how the code works
-- Distribute modified versions of the code
-
-❌ **Not Allowed**:
-- Use the code in proprietary commercial products
-- Modify and redistribute the code without sharing the source
-- Sublicense the code under a different license
 
 ### In simple terms:
 This is free software that anyone can use, study, share, and improve. However, if you modify and share this software, you must:
