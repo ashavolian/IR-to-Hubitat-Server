@@ -21,13 +21,13 @@ A web interface designed for the Raspberry Pi Zero W (or any other Raspberry Pi 
 ## 📸 Screenshots
 
 ### Main Interface
-[Insert screenshot of main interface here]
+<img width="400" src="https://github.com/user-attachments/assets/b3e9a74c-f955-4242-8b07-5c9f80fdc63a" />
 
 ### Adding New Mapping
-[Insert screenshot of mapping interface here]
+<img width="400" src="https://github.com/user-attachments/assets/0c5379b5-8e7e-4401-882a-9ab4f36b199e" />
 
 ### Current Mappings View
-[Insert screenshot of mappings list here]
+<img width="400" src="https://github.com/user-attachments/assets/5cb509da-61f3-4901-916b-b82b84b1ce99" />
 
 ## 🚀 Installation
 
