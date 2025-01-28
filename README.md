@@ -76,6 +76,8 @@ irw
 - IR receiver (TSOP38238 or similar)
 - 3 jumper wires
 - Optional: IR LED for transmitting (future feature)
+  
+I used [these parts](https://www.amazon.com/gp/product/B08X2MFS6S?ie=UTF8&psc=1)
 
 ### IR Receiver Wiring
 Connect your IR receiver to the Raspberry Pi:
